@@ -1,0 +1,58 @@
+services:
+  database:
+    image: postgres:17-alpine
+    container_name: firma_digital_database
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-firma_digital}
+      POSTGRES_USER: ${POSTGRES_USER:-firma_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-firma_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-firma_user} -d ${POSTGRES_DB:-firma_digital}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - security_lab
+
+  backend:
+    build:
+      context: ./backend
+    container_name: firma_digital_backend
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-firma_user}:${POSTGRES_PASSWORD:-firma_password}@database:5432/${POSTGRES_DB:-firma_digital}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - security_lab
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: firma_digital_frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    depends_on:
+      - backend
+    networks:
+      - security_lab
+
+volumes:
+  postgres_data:
+
+networks:
+  security_lab:
+    driver: bridge

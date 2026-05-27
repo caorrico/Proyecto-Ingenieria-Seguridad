@@ -29,10 +29,10 @@ La plataforma debe permitir:
 | --- | --- | --- |
 | Frontend | React, HTML, CSS, JavaScript | Interfaz web para usuarios, documentos, certificados y resultados criptograficos. |
 | Backend | Python, FastAPI | API REST, reglas de negocio, autenticacion y servicios criptograficos. |
-| Base de datos | SQLite en desarrollo, PostgreSQL en despliegue | Persistencia de usuarios, documentos, certificados, auditoria y resultados de pruebas. |
+| Base de datos | PostgreSQL con Docker, SQLite para pruebas locales simples | Persistencia de usuarios, documentos, certificados, auditoria y resultados de pruebas. |
 | Criptografia | cryptography, hashlib | SHA-256, AES, RSA, firmas digitales y certificados. |
 | Pruebas | pytest | Pruebas unitarias y de integracion del backend. |
-| DevSecOps | GitHub Actions, Bandit, Trivy, Nmap | Integracion continua, analisis estatico y escaneo de seguridad. |
+| DevSecOps | Docker Compose, GitHub Actions, Bandit, Trivy, Nmap | Integracion continua, contenedores, analisis estatico y escaneo de seguridad. |
 | Analisis estadistico | Python, pandas, matplotlib, Jupyter Notebook | Calculo de metricas y graficos de resultados experimentales. |
 | Entorno virtualizado | Ubuntu Server, Ubuntu Desktop, Kali Linux, Metasploitable 2 | Despliegue, cliente legitimo, pruebas de seguridad y laboratorio controlado. |
 
@@ -40,24 +40,28 @@ La plataforma debe permitir:
 
 ```text
 Proyecto-Ingenieria-Seguridad/
-├── .github/workflows/          # Automatizacion CI/CD y escaneos basicos
-├── backend/                    # API, modelos, servicios criptograficos y pruebas
-│   ├── app/
-│   │   ├── api/                # Endpoints REST
-│   │   ├── core/               # Configuracion, seguridad y dependencias comunes
-│   │   ├── models/             # Modelos de dominio y persistencia
-│   │   ├── schemas/            # Esquemas de validacion de datos
-│   │   └── services/           # Hash, AES, RSA, certificados y auditoria
-│   └── tests/                  # Pruebas automatizadas del backend
-├── devops/                     # Scripts de seguridad y automatizacion
-├── docs/                       # Documentacion tecnica, arquitectura y metodologia
-├── frontend/                   # Aplicacion web React
-│   └── src/
-│       ├── components/         # Componentes reutilizables
-│       ├── pages/              # Vistas principales
-│       └── services/           # Cliente HTTP hacia la API
-├── infrastructure/             # Notas de despliegue y laboratorio virtualizado
-└── reports/                    # Evidencias, metricas y resultados experimentales
+|-- .github/workflows/          # Automatizacion CI/CD y escaneos basicos
+|-- backend/                    # API, modelos, servicios criptograficos y pruebas
+|   |-- app/
+|   |   |-- api/                # Endpoints REST
+|   |   |-- core/               # Configuracion, seguridad y dependencias comunes
+|   |   |-- models/             # Modelos de dominio y persistencia
+|   |   |-- schemas/            # Esquemas de validacion de datos
+|   |   `-- services/           # Hash, AES, RSA, certificados y auditoria
+|   |-- tests/                  # Pruebas automatizadas del backend
+|   `-- Dockerfile              # Imagen del servicio backend
+|-- devops/                     # Scripts de seguridad y automatizacion
+|-- docs/                       # Documentacion tecnica, arquitectura y metodologia
+|-- frontend/                   # Aplicacion web React
+|   |-- src/
+|   |   |-- components/         # Componentes reutilizables
+|   |   |-- pages/              # Vistas principales
+|   |   `-- services/           # Cliente HTTP hacia la API
+|   `-- Dockerfile              # Imagen del servicio frontend
+|-- infrastructure/             # Notas de despliegue, laboratorio y base de datos
+|-- reports/                    # Evidencias, metricas y resultados experimentales
+|-- docker-compose.yml          # Backend, frontend y PostgreSQL
+`-- .env.example                # Variables de entorno de referencia
 ```
 
 ## Modulos principales
@@ -115,6 +119,38 @@ El proyecto integra seguridad durante el ciclo de vida del software:
 | Metasploitable 2 | Objetivo vulnerable para analisis controlado y comparacion de riesgos. |
 
 ## Ejecucion inicial
+
+### Docker Compose
+
+La forma recomendada para levantar la primera version funcional es Docker Compose:
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+Servicios disponibles:
+
+| Servicio | URL |
+| --- | --- |
+| Frontend | http://localhost:5173 |
+| Backend | http://localhost:8000 |
+| Documentacion API | http://localhost:8000/docs |
+| Healthcheck API | http://localhost:8000/health |
+| Healthcheck base de datos | http://localhost:8000/health/db |
+| PostgreSQL | localhost:5432 |
+
+Para detener los servicios:
+
+```bash
+docker compose down
+```
+
+Para eliminar tambien el volumen local de PostgreSQL:
+
+```bash
+docker compose down -v
+```
 
 ### Backend
 
