@@ -25,16 +25,16 @@ La plataforma debe permitir:
 
 ## Tecnologias propuestas
 
-| Capa | Tecnologia | Proposito |
-| --- | --- | --- |
-| Frontend | React, HTML, CSS, JavaScript | Interfaz web para usuarios, documentos, certificados y resultados criptograficos. |
-| Backend | Python, FastAPI | API REST, reglas de negocio, autenticacion y servicios criptograficos. |
-| Base de datos | PostgreSQL con Docker, SQLite para pruebas locales simples | Persistencia de usuarios, documentos, certificados, auditoria y resultados de pruebas. |
-| Criptografia | cryptography, hashlib | SHA-256, AES, RSA, firmas digitales y certificados. |
-| Pruebas | pytest | Pruebas unitarias y de integracion del backend. |
-| DevSecOps | Docker Compose, GitHub Actions, Bandit, Trivy, Nmap | Integracion continua, contenedores, analisis estatico y escaneo de seguridad. |
-| Analisis estadistico | Python, pandas, matplotlib, Jupyter Notebook | Calculo de metricas y graficos de resultados experimentales. |
-| Entorno virtualizado | Ubuntu Server, Ubuntu Desktop, Kali Linux, Metasploitable 2 | Despliegue, cliente legitimo, pruebas de seguridad y laboratorio controlado. |
+| Capa                 | Tecnologia                                                  | Proposito                                                                              |
+| -------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Frontend             | React, HTML, CSS, JavaScript                                | Interfaz web para usuarios, documentos, certificados y resultados criptograficos.      |
+| Backend              | Python, FastAPI                                             | API REST, reglas de negocio, autenticacion y servicios criptograficos.                 |
+| Base de datos        | PostgreSQL con Docker, SQLite para pruebas locales simples  | Persistencia de usuarios, documentos, certificados, auditoria y resultados de pruebas. |
+| Criptografia         | cryptography, hashlib                                       | SHA-256, AES, RSA, firmas digitales y certificados.                                    |
+| Pruebas              | pytest                                                      | Pruebas unitarias y de integracion del backend.                                        |
+| DevSecOps            | Docker Compose, GitHub Actions, Bandit, Trivy, Nmap         | Integracion continua, contenedores, analisis estatico y escaneo de seguridad.          |
+| Analisis estadistico | Python, pandas, matplotlib, Jupyter Notebook                | Calculo de metricas y graficos de resultados experimentales.                           |
+| Entorno virtualizado | Ubuntu Server, Ubuntu Desktop, Kali Linux, Metasploitable 2 | Despliegue, cliente legitimo, pruebas de seguridad y laboratorio controlado.           |
 
 ## Estructura del repositorio
 
@@ -111,11 +111,11 @@ El proyecto integra seguridad durante el ciclo de vida del software:
 
 ## Entorno virtualizado esperado
 
-| Maquina | Rol |
-| --- | --- |
-| Ubuntu Server | Hospeda backend, base de datos y API criptografica. |
-| Ubuntu Desktop | Cliente legitimo para consumir la plataforma. |
-| Kali Linux | Escaneo, pruebas de seguridad y validacion de vulnerabilidades. |
+| Maquina          | Rol                                                                    |
+| ---------------- | ---------------------------------------------------------------------- |
+| Ubuntu Server    | Hospeda backend, base de datos y API criptografica.                    |
+| Ubuntu Desktop   | Cliente legitimo para consumir la plataforma.                          |
+| Kali Linux       | Escaneo, pruebas de seguridad y validacion de vulnerabilidades.        |
 | Metasploitable 2 | Objetivo vulnerable para analisis controlado y comparacion de riesgos. |
 
 ## Ejecucion inicial
@@ -131,14 +131,14 @@ docker compose up --build
 
 Servicios disponibles:
 
-| Servicio | URL |
-| --- | --- |
-| Frontend | http://localhost:5173 |
-| Backend | http://localhost:8000 |
-| Documentacion API | http://localhost:8000/docs |
-| Healthcheck API | http://localhost:8000/health |
+| Servicio                  | URL                             |
+| ------------------------- | ------------------------------- |
+| Frontend                  | http://localhost:5173           |
+| Backend                   | http://localhost:8000           |
+| Documentacion API         | http://localhost:8000/docs      |
+| Healthcheck API           | http://localhost:8000/health    |
 | Healthcheck base de datos | http://localhost:8000/health/db |
-| PostgreSQL | localhost:5432 |
+| PostgreSQL                | localhost:5432                  |
 
 Para detener los servicios:
 
