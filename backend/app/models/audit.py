@@ -2,10 +2,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import Column, DateTime, Integer, String
 
-from app.core.database import engine
-from sqlalchemy.ext.declarative import declarative_base
-
-Base = declarative_base()
+from app.core.database import Base
 
 
 class AuditLog(Base):
@@ -32,7 +29,3 @@ class AuditLog(Base):
 
     def __repr__(self) -> str:
         return f"<AuditLog(id={self.id}, timestamp={self.timestamp}, tipo_evento={self.tipo_evento}, resultado={self.resultado})>"
-
-
-# Create table if it doesn't exist
-Base.metadata.create_all(bind=engine)

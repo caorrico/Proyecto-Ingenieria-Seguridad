@@ -28,6 +28,7 @@ class AESEncryptResponse(BaseModel):
     ciphertext: str  # base64
     iv: str  # base64
     tag: str  # base64
+    key: str  # base64; debe almacenarse separada del archivo cifrado
 
 
 class AESDecryptRequest(BaseModel):

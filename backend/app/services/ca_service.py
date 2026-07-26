@@ -2,6 +2,8 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Tuple
 
 from cryptography import x509
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey, RSAPublicKey
 from cryptography.x509.oid import NameOID
 
@@ -132,13 +134,21 @@ class CertificateAuthority:
         if not isinstance(certificate, x509.Certificate):
             raise TypeError("certificate must be an X.509 Certificate")
 
-        # Check if issuer matches this CA
+        # Check issuer identity and verify the certificate signature.
         ca_cn = get_certificate_subject_cn(self.ca_certificate)
         cert_issuer_cn = get_certificate_issuer_cn(certificate)
-
-        # Validate chain by matching issuer CN
-        # In production, signature verification would be performed here
-        return cert_issuer_cn == ca_cn
+        if cert_issuer_cn != ca_cn:
+            return False
+        try:
+            self.ca_public_key.verify(
+                certificate.signature,
+                certificate.tbs_certificate_bytes,
+                padding.PKCS1v15(),
+                certificate.signature_hash_algorithm,
+            )
+            return True
+        except InvalidSignature:
+            return False
 
     def is_revoked(self, certificate: x509.Certificate) -> bool:
         """

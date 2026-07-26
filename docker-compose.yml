@@ -28,6 +28,10 @@ services:
     environment:
       ENVIRONMENT: ${ENVIRONMENT:-development}
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-firma_user}:${POSTGRES_PASSWORD:-firma_password}@database:5432/${POSTGRES_DB:-firma_digital}
+      SECRET_KEY: ${SECRET_KEY:-development-only-change-before-production}
+      ACCESS_TOKEN_MINUTES: ${ACCESS_TOKEN_MINUTES:-60}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:5174}
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-5242880}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:

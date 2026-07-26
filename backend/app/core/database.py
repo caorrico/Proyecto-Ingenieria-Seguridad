@@ -1,5 +1,6 @@
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from app.core.config import settings
 
@@ -10,6 +11,19 @@ def create_database_engine() -> Engine:
 
 
 engine = create_database_engine()
+SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
 def check_database_connection() -> bool:

@@ -55,7 +55,7 @@ def get_ca() -> CertificateAuthority:
 def hash_endpoint(request: HashRequest, usuario_id: Optional[int] = None):
     """Calculate SHA-256 hash of data."""
     try:
-        data = base64.b64decode(request.data)
+        data = base64.b64decode(request.data, validate=True)
         result = hash_sha256(data)
         log_event("HASH", usuario_id=usuario_id, resultado="ÉXITO", detalle=f"hash calculated ({len(data)} bytes)")
         return HashResponse(hash=result)
@@ -68,7 +68,7 @@ def hash_endpoint(request: HashRequest, usuario_id: Optional[int] = None):
 def hash_verify_endpoint(request: HashVerifyRequest, usuario_id: Optional[int] = None):
     """Verify SHA-256 hash."""
     try:
-        data = base64.b64decode(request.data)
+        data = base64.b64decode(request.data, validate=True)
         valid = verify_sha256(data, request.expected_hash)
         if not valid:
             log_event("VERIFY_FAILED", usuario_id=usuario_id, resultado="FALLO", detalle="hash mismatch")
@@ -84,9 +84,9 @@ def hash_verify_endpoint(request: HashVerifyRequest, usuario_id: Optional[int] =
 def aes_encrypt_endpoint(request: AESEncryptRequest, usuario_id: Optional[int] = None):
     """Encrypt data with AES-256-GCM."""
     try:
-        plaintext = base64.b64decode(request.plaintext)
+        plaintext = base64.b64decode(request.plaintext, validate=True)
         if request.key:
-            key = base64.b64decode(request.key)
+            key = base64.b64decode(request.key, validate=True)
         else:
             key = generate_aes_key(256)
         encrypted = encrypt_aes_256_gcm(plaintext, key)
@@ -95,6 +95,7 @@ def aes_encrypt_endpoint(request: AESEncryptRequest, usuario_id: Optional[int] =
             ciphertext=base64.b64encode(encrypted.ciphertext).decode(),
             iv=base64.b64encode(encrypted.iv).decode(),
             tag=base64.b64encode(encrypted.tag).decode(),
+            key=base64.b64encode(key).decode(),
         )
     except Exception as e:
         log_event("ERROR", usuario_id=usuario_id, resultado="FALLO", detalle=f"encrypt error: {type(e).__name__}")
