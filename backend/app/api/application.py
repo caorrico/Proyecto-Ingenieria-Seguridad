@@ -19,19 +19,25 @@ from app.core.security import (
 from app.models.audit import AuditLog
 from app.models.entities import CertificateRecord, Document, User
 from app.schemas.application import (
+    AdminUserUpdate,
     CertificateCreate,
     CertificateOut,
     DocumentOut,
     LoginRequest,
+    PasswordChange,
     TokenResponse,
     UserCreate,
     UserOut,
     UserUpdate,
+    VisualSignatureRequest,
 )
 from app.services.audit_service import log_event
 from app.services.certificate_service import deserialize_certificate_pem, serialize_certificate_pem
 from app.services.hash_service import hash_sha256
 from app.services.signature_service import sign, verify
+from app.services.pdf_signature_service import add_visible_signature
+from app.services.file_validation_service import validate_document
+from app.services.pdf_embedded_signature_service import embed_adobe_compatible_signature
 
 router = APIRouter(prefix="/api")
 
@@ -48,7 +54,7 @@ def register(data: UserCreate, db: Session = Depends(get_db)):
         email=str(data.email).lower(),
         full_name=data.full_name,
         password_hash=hash_password(data.password),
-        role="admin" if db.scalar(select(User.id).limit(1)) is None else "user",
+        role="user",
     )
     db.add(user)
     db.commit()
@@ -102,22 +108,61 @@ def update_user(
     if not user:
         raise HTTPException(404, "Usuario no encontrado")
     changes = data.model_dump(exclude_unset=True)
-    if "active" in changes and current.role != "admin":
-        raise HTTPException(403, "Solo un administrador puede cambiar el estado")
     if "email" in changes:
         duplicate = db.scalar(select(User).where(User.email == str(changes["email"]), User.id != user_id))
         if duplicate:
             raise HTTPException(409, "El correo ya está registrado")
         changes["email"] = str(changes["email"]).lower()
-    password = changes.pop("password", None)
-    if password:
-        changes["password_hash"] = hash_password(password)
     for key, value in changes.items():
         setattr(user, key, value)
     db.commit()
     db.refresh(user)
     log_event("USER_UPDATE", current.id, "ÉXITO", f"Usuario {user_id} actualizado")
     return user
+
+
+@router.patch("/admin/users/{user_id}", response_model=UserOut, tags=["users"])
+def admin_update_user(
+    user_id: int,
+    data: AdminUserUpdate,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    user = db.get(User, user_id)
+    if not user:
+        raise HTTPException(404, "Usuario no encontrado")
+    changes = data.model_dump(exclude_unset=True)
+    if user.id == admin.id and changes.get("role") == "user":
+        raise HTTPException(400, "No puede retirar su propio rol de administrador")
+    if user.id == admin.id and changes.get("active") is False:
+        raise HTTPException(400, "No puede desactivar su propia cuenta")
+    if "email" in changes:
+        duplicate = db.scalar(select(User).where(User.email == str(changes["email"]), User.id != user_id))
+        if duplicate:
+            raise HTTPException(409, "El correo ya está registrado")
+        changes["email"] = str(changes["email"]).lower()
+    for key, value in changes.items():
+        setattr(user, key, value)
+    db.commit()
+    db.refresh(user)
+    log_event("ADMIN_USER_UPDATE", admin.id, "ÉXITO", f"Usuario {user_id} actualizado")
+    return user
+
+
+@router.post("/auth/change-password", status_code=204, tags=["auth"])
+def change_password(
+    data: PasswordChange,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not verify_password(data.current_password, user.password_hash):
+        log_event("PASSWORD_CHANGE", user.id, "FALLO", "Contraseña actual incorrecta")
+        raise HTTPException(400, "La contraseña actual es incorrecta")
+    if verify_password(data.new_password, user.password_hash):
+        raise HTTPException(400, "La nueva contraseña debe ser diferente")
+    user.password_hash = hash_password(data.new_password)
+    db.commit()
+    log_event("PASSWORD_CHANGE", user.id, "ÉXITO", "Contraseña actualizada")
 
 
 @router.delete("/users/{user_id}", status_code=204, tags=["users"])
@@ -136,7 +181,7 @@ def owned_document(document_id: int, user: User, db: Session) -> Document:
     document = db.get(Document, document_id)
     if not document:
         raise HTTPException(404, "Documento no encontrado")
-    if document.owner_id != user.id and user.role != "admin":
+    if document.owner_id != user.id:
         raise HTTPException(403, "Acceso denegado")
     return document
 
@@ -152,11 +197,14 @@ async def upload_document(
         raise HTTPException(400, "El archivo está vacío")
     if len(content) > settings.max_file_size:
         raise HTTPException(413, "El archivo supera el límite de 5 MB")
-    safe_name = (file.filename or "documento.bin").replace("\\", "_").replace("/", "_")[:255]
+    try:
+        safe_name, canonical_type = validate_document(file.filename or "", content)
+    except ValueError as exc:
+        raise HTTPException(415, str(exc))
     document = Document(
         owner_id=user.id,
         filename=safe_name,
-        content_type=(file.content_type or "application/octet-stream")[:120],
+        content_type=canonical_type,
         content=content,
         sha256=hash_sha256(content),
     )
@@ -169,9 +217,11 @@ async def upload_document(
 
 @router.get("/documents", response_model=list[DocumentOut], tags=["documents"])
 def list_documents(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    statement = select(Document).order_by(Document.created_at.desc())
-    if user.role != "admin":
-        statement = statement.where(Document.owner_id == user.id)
+    statement = (
+        select(Document)
+        .where(Document.owner_id == user.id)
+        .order_by(Document.created_at.desc())
+    )
     return list(db.scalars(statement).all())
 
 
@@ -211,6 +261,57 @@ def sign_document(
     db.refresh(document)
     log_event("SIGN", user.id, "ÉXITO", f"Documento {document.id} firmado")
     return document
+
+
+@router.post("/documents/{document_id}/visual-sign", response_model=DocumentOut, tags=["documents"])
+def visual_sign_document(
+    document_id: int,
+    data: VisualSignatureRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    document = owned_document(document_id, user, db)
+    if document.content_type != "application/pdf" and not document.filename.lower().endswith(".pdf"):
+        raise HTTPException(400, "La firma visible solo está disponible para documentos PDF")
+    try:
+        key = serialization.load_pem_private_key(data.private_key.encode(), password=None)
+        verification_text = f"{settings.public_base_url}/api/public/documents/{document.id}/verify"
+        stamped = add_visible_signature(
+            document.content, data.signer_name, verification_text, data.page, data.x, data.y, data.size
+        )
+        signed_pdf = embed_adobe_compatible_signature(stamped, key, data.signer_name)
+        document.content = signed_pdf
+        document.sha256 = hash_sha256(signed_pdf)
+        document.signature = base64.b64encode(sign(signed_pdf, key)).decode()
+        document.public_key = key.public_key().public_bytes(
+            serialization.Encoding.PEM,
+            serialization.PublicFormat.SubjectPublicKeyInfo,
+        ).decode()
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(400, str(exc) if isinstance(exc, ValueError) else "Clave privada PEM inválida")
+    db.commit()
+    db.refresh(document)
+    log_event("VISUAL_SIGN", user.id, "ÉXITO", f"Documento {document.id}, página {data.page}")
+    return document
+
+
+@router.get("/public/documents/{document_id}/verify", tags=["public-verification"])
+def public_verify_document(document_id: int, db: Session = Depends(get_db)):
+    """Public QR destination; reveals no document content or owner information."""
+    document = db.get(Document, document_id)
+    if not document or not document.signature or not document.public_key:
+        raise HTTPException(404, "No existe una firma verificable para este documento")
+    try:
+        key = serialization.load_pem_public_key(document.public_key.encode())
+        valid = verify(document.content, base64.b64decode(document.signature), key)
+    except (ValueError, TypeError):
+        valid = False
+    return {
+        "document_id": document.id,
+        "filename": document.filename,
+        "sha256": hash_sha256(document.content),
+        "signature_valid": valid,
+    }
 
 
 @router.post("/documents/{document_id}/verify", tags=["documents"])
