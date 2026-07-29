@@ -4,59 +4,100 @@
 \usepackage[spanish,es-nodecimaldot]{babel}
 \usepackage{booktabs}
 \usepackage{graphicx}
-\usepackage{url}
 \usepackage{amsmath}
+\usepackage{cite}
+\usepackage{microtype}
 \usepackage{xcolor}
 \usepackage{hyperref}
-\hypersetup{colorlinks=true,allcolors=blue}
+\hypersetup{
+  colorlinks=true,
+  allcolors=blue,
+  pdftitle={SecureSign: Plataforma Web de Firma Digital y Validación Criptográfica Integrada con DevSecOps},
+  pdfauthor={Chavez Kleber, Orrico Camilo, Toscano Jossue}
+}
 
 \title{SecureSign: Plataforma Web de Firma Digital y Validación Criptográfica Integrada con DevSecOps}
 
-\author{\IEEEauthorblockN{Autor 1, Autor 2, Autor 3}
-\IEEEauthorblockA{\textit{Carrera de Ingeniería de Software}\\
+\author{
+\makebox[0pt][c]{%
+\parbox{0.30\textwidth}{%
+\centering
+Chavez Kleber\\
+{\small\textit{Carrera de Ingeniería de Software}}\\
 Universidad de las Fuerzas Armadas ESPE\\
 Sangolquí, Ecuador\\
-\{autor1, autor2, autor3\}@espe.edu.ec}}
+kechavez2@espe.edu.ec
+}%
+\hfill
+\parbox{0.30\textwidth}{%
+\centering
+Orrico Camilo\\
+{\small\textit{Carrera de Ingeniería de Software}}\\
+Universidad de las Fuerzas Armadas ESPE\\
+Sangolquí, Ecuador\\
+caorrico@espe.edu.ec
+}%
+\hfill
+\parbox{0.30\textwidth}{%
+\centering
+Toscano Jossue\\
+{\small\textit{Carrera de Ingeniería de Software}}\\
+Universidad de las Fuerzas Armadas ESPE\\
+Sangolquí, Ecuador\\
+jatoscano6@espe.edu.ec
+}%
+}
+}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-Este trabajo presenta SecureSign, una plataforma web cliente--servidor para proteger documentos digitales mediante SHA-256, AES-256-GCM, firmas RSA-PSS y certificados X.509 emitidos por una autoridad certificadora simulada. El desarrollo integra autenticación con tokens de expiración limitada, derivación de contraseñas mediante PBKDF2, control de acceso por rol y propietario, persistencia relacional, auditoría y una canalización DevSecOps. Para relacionar las decisiones de diseño con la evidencia disponible se ejecutó una revisión rápida de literatura siguiendo las fases de Kitchenham: planificación, conducción y reporte. La evaluación experimental comprendió 140 pruebas automatizadas, análisis estático y 30 repeticiones sobre una carga de 1\,081\,344 bytes. Se obtuvo un tiempo medio de cifrado de 3.074 ms, descifrado de 3.008 ms y verificación de firma de 1.516 ms; las alteraciones fueron detectadas en el 100\% de las ejecuciones. Bandit y la auditoría de dependencias del frontend no reportaron hallazgos. Los resultados muestran que una arquitectura académica compacta puede integrar controles criptográficos y prácticas de seguridad continua sin sacrificar usabilidad, aunque su despliegue productivo requeriría gestión externa de secretos, TLS y protección de claves mediante hardware.
+En este trabajo se presenta SecureSign, una plataforma web cliente--servidor orientada a la protección de documentos digitales, cuya propuesta combina SHA-256, cifrado AES-256-GCM, firmas RSA-PSS y certificados X.509 generados por una autoridad certificadora simulada. Asimismo, incorpora autenticación con tokens de duración limitada, contraseñas derivadas con PBKDF2, permisos según el rol y el propietario, persistencia relacional y registro de auditoría. Para sustentar las decisiones del proyecto se realizó una revisión rápida de literatura basada en las fases de planificación, conducción y reporte de Kitchenham, mientras que la evaluación incluyó 140 pruebas automatizadas, análisis estático y 30 repeticiones con un archivo de 1\,081\,344 bytes. Los tiempos medios fueron 3.074 ms para el cifrado, 3.008 ms para el descifrado y 1.516 ms para la verificación de firmas; además, todas las alteraciones provocadas durante las pruebas fueron detectadas y tanto Bandit como la auditoría de dependencias del frontend finalizaron sin hallazgos. En conjunto, estos resultados indican que es posible reunir controles criptográficos y prácticas DevSecOps en una aplicación académica de tamaño reducido; sin embargo, para utilizarla en un entorno real todavía serían necesarios TLS, gestión externa de secretos y mecanismos más seguros para almacenar las claves.
 \end{abstract}
 
 \begin{IEEEkeywords}
-DevSecOps, firma digital, criptografía aplicada, AES-GCM, RSA-PSS, certificados X.509, revisión sistemática.
+DevSecOps, firma digital, criptografía aplicada, AES-GCM, RSA-PSS, certificados X.509, revisión rápida.
 \end{IEEEkeywords}
 
 \section{Introducción}
-Los documentos intercambiados por aplicaciones web requieren garantías diferenciadas: la confidencialidad limita su lectura, la integridad permite detectar cambios y la autenticidad vincula una operación con una identidad. Tratar estas propiedades únicamente al final del desarrollo contradice el principio DevSecOps de responsabilidad compartida. La literatura caracteriza DevSecOps como la incorporación continua de seguridad al flujo DevOps y destaca la automatización, el \textit{shift-left} y la evaluación continua como prácticas recurrentes \cite{myrbakken2017,rajapakse2022,zhou2023}.
+Cuando se intercambian documentos mediante una aplicación web no basta con almacenarlos y permitir su descarga, pues también se debe evitar que personas no autorizadas los lean, comprobar que no hayan sido modificados y relacionar cada operación con un usuario. Estas necesidades corresponden a la confidencialidad, la integridad y la autenticidad; no obstante, si la seguridad se revisa únicamente al final del desarrollo, varios problemas pueden descubrirse demasiado tarde. Por esta razón, DevSecOps propone incorporarla durante todo el proceso y repartir esa responsabilidad entre quienes participan en el proyecto, mediante prácticas como la automatización, el enfoque \textit{shift-left} y la evaluación continua \cite{myrbakken2017,rajapakse2022,zhou2023}.
 
-El objetivo de este estudio es diseñar, implementar y evaluar una plataforma reproducible que reúna gestión de usuarios, documentos y certificados con operaciones criptográficas. Las contribuciones son: (1) una arquitectura web funcional con controles de autorización y auditoría; (2) una síntesis de evidencia guiada por Kitchenham; y (3) resultados experimentales y de seguridad que pueden reproducirse desde el repositorio.
+El objetivo del trabajo fue diseñar, implementar y evaluar una plataforma reproducible que reúna la gestión de usuarios, documentos y certificados con varias operaciones criptográficas. El proyecto aporta tres elementos principales: una arquitectura web funcional con autorización y auditoría, una síntesis de literatura guiada por Kitchenham y un conjunto de resultados experimentales y de seguridad que puede volver a ejecutarse desde el repositorio.
 
 \section{Marco teórico}
 \subsection{Controles criptográficos}
-SHA-256 produce resúmenes de 256 bits y está definido por el estándar Secure Hash Standard \cite{fips180}. En SecureSign se usa para identificar el contenido y comparar integridad; para contraseñas se emplea PBKDF2 con sal aleatoria y 600\,000 iteraciones, pues una función rápida aislada no ofrece suficiente resistencia frente a intentos fuera de línea.
+SHA-256 genera resúmenes de 256 bits y forma parte del estándar Secure Hash Standard \cite{fips180}; en SecureSign se utiliza para identificar el contenido de un archivo y comprobar si este cambió. Sin embargo, no se usa directamente para guardar contraseñas, ya que una función rápida no ofrece suficiente protección frente a intentos masivos fuera de línea. Para ese caso se eligió PBKDF2 con sal aleatoria y 600\,000 iteraciones, debido a que esta función deriva una clave a partir de la contraseña, una sal y un número de iteraciones, lo que incrementa el costo de cada intento de adivinación \cite{nist800132,rfc8018}.
 
-AES es el cifrador simétrico normalizado por FIPS 197 \cite{fips197}. El modo GCM aporta confidencialidad y autenticación del texto cifrado, evitando separar de forma insegura el cifrado y el código de autenticación. Para firmas se aplica RSASSA-PSS con SHA-256, esquema probabilístico especificado en PKCS \#1 \cite{rfc8017}. Los certificados X.509 vinculan una clave pública con un sujeto y una entidad emisora; el prototipo valida vigencia, emisor, firma y estado de revocación.
+AES es el algoritmo de cifrado simétrico normalizado en FIPS 197 \cite{fips197} y, para este proyecto, se trabajó con el modo GCM porque combina el cifrado con la autenticación de los datos, de acuerdo con la recomendación SP 800-38D de NIST \cite{nist80038d}. En cuanto a las firmas, se empleó RSASSA-PSS con SHA-256, un esquema probabilístico descrito en PKCS \#1 \cite{rfc8017}. Por otra parte, los certificados X.509 permiten asociar una clave pública con un sujeto mediante la firma de una autoridad certificadora; además, el perfil definido en RFC 5280 contempla la vigencia, la construcción de la ruta de confianza y la información de revocación \cite{rfc5280}. Para mantener el alcance académico del prototipo, estos elementos se implementaron de forma simplificada.
 
 \subsection{DevSecOps}
-Myrbakken y Colomo-Palacios identificaron tempranamente que los controles tradicionales no acompañaban la velocidad de DevOps \cite{myrbakken2017}. Rajapakse \textit{et al.} sintetizaron 54 estudios y agruparon los desafíos en personas, prácticas, herramientas e infraestructura \cite{rajapakse2022}. Trabajos posteriores proponen modelos que vinculan desafíos, prácticas, herramientas y métricas \cite{akbar2024}, y evidencia industrial señala la relevancia de SAST, ataques automatizados y seguridad compartida \cite{zhou2023}. Estas conclusiones fundamentaron una canalización con pruebas, compilación, Bandit y escaneo de dependencias.
+Myrbakken y Colomo-Palacios observaron que varios controles tradicionales de seguridad no seguían el mismo ritmo de trabajo que DevOps \cite{myrbakken2017}; más adelante, Rajapakse \textit{et al.} revisaron 54 estudios y organizaron los principales desafíos en personas, prácticas, herramientas e infraestructura \cite{rajapakse2022}. En este sentido, la adopción no depende solamente de instalar herramientas, sino que también requiere conocimientos compartidos y una cultura de seguridad dentro del equipo \cite{sanchez2020,rahman2019}. Otros trabajos relacionan estos desafíos con prácticas y métricas concretas \cite{akbar2024}, mientras que la evidencia industrial resalta el análisis estático, las pruebas automatizadas y la responsabilidad compartida \cite{zhou2023}. A partir de estas ideas se definió una canalización que ejecuta pruebas, compila el sistema y revisa tanto el código como las dependencias.
 
 \section{Metodología}
 \subsection{Revisión rápida según Kitchenham}
-Se siguieron las fases de planificación, conducción y reporte propuestas por Kitchenham y Charters \cite{kitchenham2007}. Se formularon dos preguntas:
+La revisión se organizó con las fases de planificación, conducción y reporte propuestas por Kitchenham y Charters \cite{kitchenham2007}. Antes de iniciar la búsqueda se plantearon dos preguntas:
 \begin{itemize}
  \item \textbf{RQ1:} ¿Qué prácticas y herramientas facilitan incorporar seguridad continua en una aplicación web criptográfica?
  \item \textbf{RQ2:} ¿Qué controles permiten verificar integridad, autenticidad y confidencialidad de documentos?
 \end{itemize}
 
-La búsqueda se ejecutó el 26 de julio de 2026 en índices web de IEEE Xplore, ACM DL, ScienceDirect, SpringerLink y repositorios académicos, con la cadena: \texttt{(DevSecOps OR ``secure software development'') AND (practice OR tool OR challenge) AND (cryptography OR ``digital signature'' OR certificate)}. Se incluyeron trabajos en inglés o español, publicados entre 2016 y 2026, con revisión por pares, texto o metadatos verificables y relación directa con las preguntas. Se excluyeron duplicados, publicidad, trabajos sin método explícito y estudios sin relación con seguridad del ciclo de vida.
+La búsqueda se realizó el 26 de julio de 2026 en los índices web de IEEE Xplore, ACM DL, ScienceDirect y SpringerLink, además de algunos repositorios académicos. Se utilizó la siguiente cadena:
+\par\begingroup
+\footnotesize\ttfamily\raggedright
+(DevSecOps OR ``secure software development'')\newline
+AND (practice OR tool OR challenge)\newline
+AND (cryptography OR ``digital signature'' OR certificate)
+\par\endgroup
+Se consideraron trabajos en inglés o español publicados entre 2016 y 2026. Para ingresar a la revisión debían contar con revisión por pares, texto o metadatos verificables y una relación directa con las preguntas planteadas. Se descartaron duplicados, material publicitario, documentos sin un método identificable y estudios alejados de la seguridad durante el ciclo de desarrollo.
 
-La identificación produjo 14 candidatos; tras eliminar dos duplicados se revisaron 12 títulos y resúmenes. Tres se excluyeron por baja correspondencia temática y uno por falta de evidencia metodológica, quedando ocho estudios. Cada estudio recibió un punto por pregunta de investigación explícita, método descrito, evidencia trazable y discusión de limitaciones; se exigieron al menos tres de cuatro puntos. La síntesis fue narrativa debido a la heterogeneidad de métodos y métricas. El protocolo, la cadena y las decisiones se conservan para auditabilidad, tal como recomiendan las directrices \cite{kitchenham2007,kitchenham2009}.
+La búsqueda inicial produjo 14 candidatos y, después de retirar dos duplicados, se revisaron 12 títulos y resúmenes. De estos documentos, tres tenían poca relación con el tema y uno no mostraba evidencia suficiente sobre su método, por lo que la selección final quedó en ocho estudios. Para valorar su calidad se asignó un punto por cada uno de estos criterios: pregunta de investigación explícita, método descrito, evidencia rastreable y discusión de limitaciones; de esta manera, se aceptaron los trabajos que alcanzaron al menos tres de los cuatro puntos. Como los métodos y las métricas no eran comparables entre todos los estudios, se realizó una síntesis narrativa y se conservaron la cadena, los criterios y las decisiones para que el proceso pudiera revisarse posteriormente, tal como sugieren las guías de Kitchenham \cite{kitchenham2007,kitchenham2009}.
+
+La Tabla~\ref{tab:slr} resume los temas que aparecieron con mayor frecuencia en los estudios seleccionados: automatización, responsabilidad compartida, integración de herramientas, dificultades culturales y uso de métricas \cite{myrbakken2017,rajapakse2022,sanchez2020,zhou2023,akbar2024}.
 
 \begin{table}[ht]
 \caption{Síntesis de la revisión de literatura}
+\label{tab:slr}
 \centering
 \begin{tabular}{p{1.7cm}p{4.9cm}}
 \toprule
@@ -68,18 +109,17 @@ Desafíos & Complejidad de integración, falsos positivos, cultura, competencias
 Métricas & Vulnerabilidades, cobertura, tiempo de operación, tasa de detección y mitigación.\\
 \bottomrule
 \end{tabular}
-\label{tab:slr}
 \end{table}
 
 \subsection{Desarrollo y evaluación}
-El desarrollo utilizó un backlog ágil incremental. La verificación se realizó en tres niveles: pruebas unitarias de primitivas, prueba integral de API y compilación del cliente. Para el experimento se cifró, descifró, firmó y verificó una carga fija de 1\,081\,344 bytes durante 30 repeticiones. El tiempo se midió con reloj monotónico de alta resolución. La media se calculó como
+El desarrollo se organizó mediante un \textit{backlog} incremental, mientras que la verificación se dividió en tres niveles: pruebas unitarias de las primitivas criptográficas, una prueba integral de la API y la compilación del cliente. En el experimento se cifró, descifró, firmó y verificó un archivo fijo de 1\,081\,344 bytes durante 30 repeticiones, cuyos tiempos se midieron con un reloj monotónico de alta resolución. La media se obtuvo mediante
 \begin{equation}
 \bar{x}=\frac{1}{n}\sum_{i=1}^{n}x_i,
 \end{equation}
-y la detección como la proporción de firmas rechazadas después de modificar un byte. El análisis de seguridad incluyó Bandit sobre el backend y \texttt{npm audit} sobre dependencias de producción.
+mientras que la capacidad de detección se calculó como la proporción de firmas rechazadas después de modificar un byte del archivo. Finalmente, el análisis de seguridad incluyó Bandit para el backend y \texttt{npm audit} para las dependencias de producción del frontend.
 
 \section{Arquitectura e implementación}
-La interfaz React consume una API REST FastAPI. SQLAlchemy abstrae PostgreSQL en contenedores y SQLite durante pruebas locales. El sistema comprende:
+La aplicación se divide en una interfaz desarrollada con React y una API REST construida con FastAPI, mientras que para el acceso a datos se emplea SQLAlchemy: PostgreSQL se utiliza en los contenedores y SQLite en las pruebas locales. A su vez, la autenticación usa JWT e incluye una fecha de expiración, campo previsto por la especificación para impedir que un token siga siendo aceptado después del tiempo establecido \cite{rfc7519}. De forma general, el sistema contiene los siguientes componentes:
 \begin{itemize}
  \item \textbf{Identidad:} registro, inicio de sesión, JWT HS256 con expiración, PBKDF2 y roles administrador/usuario.
  \item \textbf{Documentos:} carga restringida a 5 MB, consulta, descarga, borrado, SHA-256, firma y verificación.
@@ -88,13 +128,14 @@ La interfaz React consume una API REST FastAPI. SQLAlchemy abstrae PostgreSQL en
  \item \textbf{Auditoría:} eventos de acceso, operaciones, fallos y validaciones sin almacenar contraseñas, claves o texto plano.
 \end{itemize}
 
-La autorización se aplica en el servidor: un usuario solo opera sobre sus registros, mientras que el administrador consulta usuarios y auditoría. Las entradas estructuradas se validan con Pydantic, los archivos se leen con límite, los nombres se neutralizan y las respuestas de error no exponen excepciones internas. La interfaz conserva la clave privada únicamente en memoria del navegador; no se persiste en el servidor.
+La autorización se comprueba en el servidor, de manera que un usuario común solo puede operar sobre sus propios registros, mientras que el administrador tiene acceso a la consulta de usuarios y eventos de auditoría. Por otra parte, las entradas estructuradas se validan con Pydantic y los archivos se leen aplicando un límite de tamaño; además, se normalizan los nombres y se evita devolver excepciones internas en los mensajes de error. En cuanto a la clave privada, esta permanece únicamente en la memoria del navegador durante la sesión y no se guarda en el servidor.
 
-La canalización GitHub Actions instala dependencias con versiones fijadas, ejecuta pruebas, Bandit y la compilación Vite. La literatura muestra que SAST es útil pero no completo; incluso herramientas evaluadas sobre cambios vulnerables mantienen falsos positivos y omisiones \cite{lee2024}. Por ello, el escaneo se complementa con pruebas funcionales y se contempla Trivy/Nmap en el laboratorio.
+La canalización de GitHub Actions instala las dependencias con versiones fijadas, ejecuta las pruebas, inicia Bandit y compila el cliente con Vite. Aunque el análisis estático ayuda a detectar problemas, no cubre por sí solo todos los casos, pues incluso las herramientas evaluadas sobre cambios vulnerables todavía producen falsos positivos y omiten ciertos fallos \cite{lee2024}. Por ello, en este proyecto el escaneo se acompaña de pruebas funcionales, mientras que Trivy y Nmap se dejaron como herramientas adicionales para las prácticas de laboratorio.
 
 \section{Resultados}
 \begin{table}[ht]
 \caption{Resultados experimentales (30 repeticiones)}
+\label{tab:results}
 \centering
 \begin{tabular}{lr}
 \toprule
@@ -111,23 +152,23 @@ Hallazgos Bandit & 0\\
 Vulnerabilidades npm audit & 0\\
 \bottomrule
 \end{tabular}
-\label{tab:results}
 \end{table}
 
-La prueba integral crea una cuenta, autentica, carga un documento, genera claves, firma, verifica, emite y valida un certificado, lo revoca y confirma su rechazo. Además comprueba que la consulta anónima de documentos devuelve HTTP 401. Las 140 pruebas pasaron; las advertencias observadas corresponden al uso interno de \texttt{datetime.utcnow()} en la dependencia \texttt{python-jose} y no a fallos funcionales.
+La prueba integral reproduce el recorrido principal de un usuario: primero crea una cuenta e inicia sesión; después carga un documento, genera las claves, firma el archivo y verifica la firma; a continuación, emite un certificado, comprueba su validez, lo revoca y confirma que el sistema ya no lo acepte. Asimismo, se verificó que una consulta anónima de documentos devuelva el código HTTP 401. En total, las 140 pruebas finalizaron correctamente y las únicas advertencias provinieron del uso interno de \texttt{datetime.utcnow()} en la dependencia \texttt{python-jose}, sin afectar el funcionamiento evaluado.
 
-Los resultados de la Tabla~\ref{tab:results} confirman los escenarios mínimos. Un mismo contenido mantiene el resumen, cualquier modificación invalida la firma, AES-GCM recupera exactamente el texto y el certificado revocado se rechaza. Las métricas respaldan la factibilidad para archivos académicos pequeños, pero no constituyen una comparación de algoritmos ni una medición bajo carga concurrente.
+Los datos de la Tabla~\ref{tab:results} muestran que los escenarios básicos se cumplieron, ya que el mismo contenido conserva su resumen, mientras que la modificación de un byte hace que la firma sea rechazada. De igual manera, AES-GCM recuperó el archivo original y los certificados revocados dejaron de considerarse válidos. Aunque los tiempos obtenidos son adecuados para el tamaño de archivo utilizado en el experimento, estos resultados no deben interpretarse como una comparación entre algoritmos ni como una prueba de rendimiento con varios usuarios conectados al mismo tiempo.
 
 \section{Verificación, validación y amenazas a la validez}
-La validez constructiva se fortaleció usando operaciones estandarizadas y escenarios derivados de los requisitos. Como amenaza, el cronometraje incluye efectos del sistema operativo y se ejecutó en una sola máquina; se reportan repeticiones y desviación para transparentar esa variación. La validez interna está limitada por la CA residente en proceso para la compatibilidad criptográfica, aunque la revocación funcional se persiste en base de datos. La validez externa es limitada: no se evaluaron HSM, TLS, múltiples nodos ni usuarios concurrentes.
+Para que las pruebas representaran los requisitos se utilizaron operaciones criptográficas estandarizadas y escenarios relacionados con las funciones del sistema; aun así, existen varias limitaciones. En primer lugar, las mediciones se realizaron en una sola computadora y pueden verse afectadas por otros procesos del sistema operativo, por lo que se usaron 30 repeticiones y se reportó la desviación estándar del cifrado. Además, la autoridad certificadora se mantiene dentro del proceso de la aplicación para facilitar el prototipo, aunque el estado de revocación sí se guarda en la base de datos. Finalmente, no se probaron HSM, conexiones TLS, múltiples nodos o usuarios concurrentes, de modo que los resultados todavía no representan un despliegue de producción.
 
-La revisión es rápida y no pretende ser un metaanálisis. Los índices cambian y la selección fue realizada por los autores, por lo que existe riesgo de sesgo. Se mitigó mediante preguntas previas, cadena publicada, criterios explícitos y referencias con DOI o fuente normativa. La evidencia coincide en la necesidad de automatización, pero también advierte que las herramientas aisladas no sustituyen decisiones arquitectónicas ni revisión humana \cite{rajapakse2022,akbar2024,lee2024}.
+La revisión de literatura también presenta límites, debido a que fue planteada como una revisión rápida y no como un metaanálisis. Además, los resultados disponibles en los índices pueden cambiar y la selección fue realizada por los mismos autores del proyecto, lo que introduce un posible sesgo. Para reducir este riesgo se definieron las preguntas antes de buscar, se conservó la cadena utilizada y se aplicaron criterios explícitos; asimismo, siempre que fue posible se incluyeron referencias con DOI o documentos normativos. En general, los estudios coinciden en la utilidad de automatizar controles, aunque también señalan que una herramienta aislada no reemplaza las decisiones de arquitectura ni la revisión de una persona \cite{rajapakse2022,akbar2024,lee2024}.
 
 \section{Conclusiones}
-SecureSign satisface el alcance funcional de una plataforma académica de firma digital: integra CRUD, autenticación, cifrado, hash, firma, certificados, revocación y auditoría en una arquitectura desplegable con Docker. La evaluación detectó todas las alteraciones inducidas, mantuvo tiempos medios inferiores a 3.1 ms para la carga probada y no produjo hallazgos en los escaneos ejecutados.
+SecureSign cumplió el alcance definido para una plataforma académica de firma digital, pues integra operaciones CRUD, autenticación, cifrado, cálculo de resúmenes, firmas, certificados, revocación y auditoría dentro de una arquitectura que puede desplegarse con Docker. Durante la evaluación se detectaron todas las alteraciones introducidas de forma intencional y, para el archivo probado, los tiempos medios se mantuvieron por debajo de 3.1 ms, mientras que los escaneos realizados no reportaron hallazgos.
 
-La revisión guiada por Kitchenham permitió justificar la automatización y la medición como partes del diseño, no como actividades posteriores. Como trabajo futuro se propone sustituir el secreto JWT por un gestor de secretos, usar TLS mediante proxy inverso, cifrar objetos en reposo, persistir la clave de la CA en un almacén protegido, incorporar MFA, rotación de claves, límites de intentos, Alembic, DAST, Trivy y ensayos desde Kali Linux. Para valor probatorio real se requerirían sellado de tiempo, políticas de identidad verificadas y claves privadas en HSM o dispositivos del usuario.
+La revisión guiada por Kitchenham ayudó a tratar la automatización y la medición como parte del diseño, en lugar de dejarlas para el final; sin embargo, el prototipo todavía puede mejorarse. Entre los siguientes pasos se encuentran trasladar el secreto JWT a un gestor de secretos, habilitar TLS mediante un proxy inverso, cifrar los objetos almacenados y proteger mejor la clave de la autoridad certificadora. También sería conveniente incorporar MFA, rotación de claves, límites de intentos, migraciones con Alembic y pruebas con DAST, Trivy y Kali Linux. Por último, si se buscara dar valor probatorio real a las firmas, harían falta sellos de tiempo, políticas verificables de identidad y claves privadas almacenadas en un HSM o en dispositivos controlados por cada usuario.
 
 \bibliographystyle{IEEEtran}
-\bibliography{referencias}
+\IEEEtriggeratref{14}
+\bibliography{prism-uploads/referencias}
 \end{document}
